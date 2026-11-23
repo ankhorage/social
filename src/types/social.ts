@@ -42,8 +42,5 @@ export type SocialExecutionDecision =
   | {
       readonly dispatched: false;
       readonly reason:
-        | 'invalid-command'
-        | 'provider-mismatch'
-        | 'unsupported-action'
-        | 'connection-denied';
+        'invalid-command' | 'provider-mismatch' | 'unsupported-action' | 'connection-denied';
     };
