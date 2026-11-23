@@ -300,4 +300,90 @@ describe('social analytics retrieval', () => {
       expect(error.message).toContain('outside the declared capability');
     }
   });
+
+  it('compares observations only when they share the same authorized source', async () => {
+    const [observation] = await retrieveSocialAnalyticsAsync({
+      adapter,
+      query,
+      observedAt: '2026-11-23T12:00:00.000Z',
+      maximumAgeMs: 24 * 60 * 60 * 1000,
+    });
+
+    if (!observation) {
+      throw new Error('Expected a source observation.');
+    }
+
+    expect(areSocialAnalyticsObservationsComparable(observation, { ...observation })).toBeTrue();
+    expect(
+      areSocialAnalyticsObservationsComparable(observation, {
+        ...observation,
+        provenance: { ...observation.provenance, tenantId: 'tenant-b' },
+      }),
+    ).toBeFalse();
+    expect(
+      areSocialAnalyticsObservationsComparable(observation, {
+        ...observation,
+        provenance: { ...observation.provenance, accountId: 'account-2' },
+      }),
+    ).toBeFalse();
+    expect(
+      areSocialAnalyticsObservationsComparable(observation, {
+        ...observation,
+        provenance: { ...observation.provenance, targetId: 'board-2' },
+      }),
+    ).toBeFalse();
+    expect(
+      areSocialAnalyticsObservationsComparable(observation, {
+        ...observation,
+        provenance: { ...observation.provenance, contentId: 'pin-2' },
+      }),
+    ).toBeFalse();
+  });
+
+  it('rejects available values for unsupported or unavailable capabilities', async () => {
+    const [retrieval] = await adapter.retrieveAsync(query);
+
+    if (!retrieval) {
+      throw new Error('Expected a source observation.');
+    }
+
+    const createAdapter = (
+      availability: { kind: 'unsupported' } | { kind: 'unavailable'; reason: 'not-ready' },
+    ): SocialAnalyticsAdapter => ({
+      getCapabilitiesAsync: () =>
+        Promise.resolve([
+          {
+            provenance: query.provenance,
+            metric: retrieval.metric,
+            availability,
+          },
+        ]),
+      retrieveAsync: () =>
+        Promise.resolve([{ ...retrieval, availability: { kind: 'available', value: 42 } }]),
+    });
+
+    const readInput = {
+      query: { ...query, providerMetricIds: [retrieval.metric.providerMetricId] },
+      observedAt: '2026-11-23T12:00:00.000Z',
+      maximumAgeMs: 24 * 60 * 60 * 1000,
+    };
+
+    const assertAvailableValueIsRejectedAsync = async (
+      availability: { kind: 'unsupported' } | { kind: 'unavailable'; reason: 'not-ready' },
+    ): Promise<void> => {
+      try {
+        await retrieveSocialAnalyticsAsync({ ...readInput, adapter: createAdapter(availability) });
+        throw new Error('Expected the available value to be rejected.');
+      } catch (error: unknown) {
+        if (!(error instanceof Error)) {
+          throw error;
+        }
+
+        expect(error.message).toContain('outside the declared capability');
+      }
+    };
+
+    await assertAvailableValueIsRejectedAsync({ kind: 'unsupported' });
+    await assertAvailableValueIsRejectedAsync({ kind: 'unavailable', reason: 'not-ready' });
+  });
 });

@@ -42,7 +42,8 @@ const createObservation = (
   if (
     !capability ||
     !sameProvenance(retrieval.provenance, input.query.provenance) ||
-    !sameMetric(retrieval, capability)
+    !sameMetric(retrieval, capability) ||
+    !availabilityMatchesCapability(retrieval, capability)
   ) {
     throw new Error(
       'Social analytics adapter returned an observation outside the declared capability.',
@@ -87,6 +88,13 @@ const sameMetric = (
   retrieval.metric.providerMetricId === capability.metric.providerMetricId &&
   retrieval.metric.meaning === capability.metric.meaning &&
   retrieval.metric.unit === capability.metric.unit;
+
+/*** Rejects available values for metrics the provider declared unsupported or unavailable. */
+const availabilityMatchesCapability = (
+  retrieval: SocialAnalyticsRetrieval,
+  capability: SocialAnalyticsCapability,
+): boolean =>
+  capability.availability.kind === 'supported' || retrieval.availability.kind !== 'available';
 
 /*** Classifies source data as stale only against an explicit caller-supplied freshness policy. */
 const getFreshness = (
