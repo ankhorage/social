@@ -1,7 +1,7 @@
 {
   "name": "@ankhorage/social",
   "version": "0.0.0",
-  "description": "",
+  "description": "todo",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
