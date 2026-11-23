@@ -1,0 +1,63 @@
+{
+  "name": "@ankhorage/social",
+  "version": "0.0.0",
+  "description": "",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ankhorage/social.git"
+  },
+  "homepage": "https://github.com/ankhorage/social#readme",
+  "bugs": {
+    "url": "https://github.com/ankhorage/social/issues"
+  },
+  "keywords": [
+    "ankhorage",
+    "adapter"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "rm -rf dist tsconfig.tsbuildinfo && bun x tsc -p tsconfig.build.json",
+    "typecheck": "bun x tsc --noEmit -p tsconfig.json",
+    "check-types": "bun run typecheck",
+    "test": "bun test src",
+    "docs": "paradox && ankhorage-prettier --write README.md docs",
+    "prepack": "bun run build",
+    "lint": "ankhorage-eslint . --max-warnings=0",
+    "lint:fix": "ankhorage-eslint . --fix --max-warnings=0",
+    "format": "ankhorage-prettier --write .",
+    "format:check": "ankhorage-prettier --check .",
+    "knip:check": "ankhorage-knip",
+    "changeset": "ankhorage-changeset",
+    "changeset:status": "ankhorage-changeset status --since=origin/main",
+    "version-packages": "ankhorage-changeset version"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@ankhorage/devtools": "^2.10.11",
+    "@ankhorage/paradox": "^0.6.0",
+    "@types/bun": "^1.4.2",
+    "@types/node": "^26.4.1",
+    "typescript": "~6.0.3"
+  },
+  "packageManager": "bun@1.4.2"
+}
