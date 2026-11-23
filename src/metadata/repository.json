@@ -2,39 +2,40 @@
   "schemaVersion": 1,
   "kind": "library",
   "title": "Ankhorage Social",
-  "summary": "Provides provider-neutral execution boundaries for publish, comment, and reaction actions.",
-  "purpose": "Give independently released applications a typed social-action dispatch boundary without coupling workflows to OAuth, credential storage, or provider SDKs.",
+  "summary": "Provides provider-neutral capability, media-preflight, and idempotent execution boundaries for social actions.",
+  "purpose": "Give independently released applications a typed social-action dispatch boundary without coupling workflows to Connection, Flow, OAuth, credential storage, or provider SDKs.",
   "domain": "social action execution",
   "responsibilities": [
-    "Publish typed commands, receipts, authorization ports, and provider ports for social actions.",
-    "Validate and dispatch publish, comment, and reaction commands through an explicitly selected provider capability.",
-    "Propagate opaque authorization references and caller-provided idempotency keys without persisting them."
+    "Publish typed commands, operation-target receipts, and generic authorization, media, and provider ports for social actions.",
+    "Preflight provider account and destination capabilities, content formats, media metadata, and current trusted scopes.",
+    "Reconcile stable operation keys before one provider execution attempt without persisting provider state."
   ],
   "boundaries": [
-    "Does not own OAuth, credential storage, provider SDK authentication, or provider-specific payloads.",
+    "Does not own Connection, Flow, OAuth, credential storage, media upload, provider SDK authentication, or provider-specific payloads.",
     "Does not execute Flow orchestration or persist action state, idempotency records, or receipts.",
     "Does not require consumers to use unpublished sibling sources or an Ankhorage application."
   ],
   "audience": [
-    "Application and workflow authors dispatching social actions through provider adapters.",
-    "Adapter authors implementing authorization and provider boundaries for social platforms."
+    "Application authors dispatching social actions through provider adapters.",
+    "Adapter authors implementing trusted authorization, media preflight, and provider boundaries for social platforms."
   ],
   "useCases": [
-    "Dispatch an authorized publish, comment, or reaction action to a matching provider adapter.",
-    "Reject malformed, unauthorized, mismatched, or unsupported actions before provider execution."
+    "Dispatch an authorized publish, comment, reply, reaction, or repost action to a matching provider adapter.",
+    "Reject malformed, unauthorized, mismatched, unsupported, unpreflighted, or ambiguous actions before provider execution."
   ],
   "architecture": {
-    "role": "Provider-neutral social action library with explicit authorization and provider ports.",
+    "role": "Provider-neutral social action library with explicit authorization, media preflight, and provider ports.",
     "invariants": [
-      "Social action dispatch remains independent from OAuth, credential storage, Flow execution, and provider SDKs.",
-      "Provider adapters own platform authentication, durable idempotency, and receipt persistence.",
+      "Social action dispatch remains independent from Connection, Flow, OAuth, credential storage, media upload, and provider SDKs.",
+      "Trusted authorization binds the exact operation, tenant, actor, and target before every provider effect.",
+      "Provider adapters own platform authentication, durable idempotency, reconciliation, and receipt persistence.",
       "Consumers use the published package entrypoint and declared dependencies."
     ]
   },
   "constraints": {
     "limitations": [
-      "Provider capabilities, authorization decisions, idempotency guarantees, and receipts depend on caller-supplied adapters.",
-      "Only publish, comment, and reaction actions are represented by the current public API."
+      "Provider capabilities, authorization decisions, media source validation, idempotency guarantees, and receipts depend on caller-supplied adapters.",
+      "Social never claims exactly-once delivery and fails closed for ambiguous reconciliation or execution outcomes."
     ]
   }
 }
