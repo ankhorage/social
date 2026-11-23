@@ -7,3 +7,21 @@ export type {
   SocialProviderPort,
   SocialReceipt,
 } from './types/social.js';
+export { areSocialAnalyticsObservationsComparable } from './features/analytics/domain/areSocialAnalyticsObservationsComparable.js';
+export { getSocialAnalyticsCapabilitiesAsync } from './features/analytics/domain/getSocialAnalyticsCapabilitiesAsync.js';
+export { retrieveSocialAnalyticsAsync } from './features/analytics/domain/retrieveSocialAnalyticsAsync.js';
+export type {
+  SocialAnalyticsAdapter,
+  SocialAnalyticsAvailability,
+  SocialAnalyticsCapability,
+  SocialAnalyticsFreshness,
+  SocialAnalyticsMetricDefinition,
+  SocialAnalyticsObservation,
+  SocialAnalyticsProvenance,
+  SocialAnalyticsProvider,
+  SocialAnalyticsQuery,
+  SocialAnalyticsReadInput,
+  SocialAnalyticsRetrieval,
+  SocialAnalyticsUnit,
+  SocialAnalyticsWindow,
+} from './types/socialAnalytics.js';

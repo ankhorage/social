@@ -1,10 +1,87 @@
 import { describe, expect, it, mock } from 'bun:test';
 
 import {
+  areSocialAnalyticsObservationsComparable,
   executeSocialActionAsync,
+  getSocialAnalyticsCapabilitiesAsync,
+  retrieveSocialAnalyticsAsync,
+  type SocialAnalyticsAdapter,
+  type SocialAnalyticsQuery,
   type SocialActionCommand,
   type SocialProviderPort,
 } from './index.js';
+
+const query: SocialAnalyticsQuery = {
+  provenance: {
+    tenantId: 'tenant-a',
+    provider: 'pinterest',
+    accountId: 'account-1',
+    targetId: 'board-1',
+    contentId: 'pin-1',
+  },
+  providerMetricIds: ['PIN_IMPRESSION', 'PIN_SAVE', 'OUTBOUND_CLICK'],
+};
+
+const adapter: SocialAnalyticsAdapter = {
+  getCapabilitiesAsync: (requestedQuery) =>
+    Promise.resolve(
+      requestedQuery.providerMetricIds.map((providerMetricId) => ({
+        provenance: requestedQuery.provenance,
+        metric: {
+          providerMetricId,
+          meaning:
+            providerMetricId === 'PIN_SAVE'
+              ? 'Saves recorded by Pinterest.'
+              : 'Organic impressions recorded by Pinterest.',
+          unit: 'count' as const,
+        },
+        availability:
+          providerMetricId === 'OUTBOUND_CLICK'
+            ? { kind: 'unsupported' as const }
+            : { kind: 'supported' as const },
+      })),
+    ),
+  retrieveAsync: (requestedQuery) =>
+    Promise.resolve([
+      {
+        provenance: requestedQuery.provenance,
+        metric: {
+          providerMetricId: 'PIN_IMPRESSION',
+          meaning: 'Organic impressions recorded by Pinterest.',
+          unit: 'count' as const,
+        },
+        window: { startedAt: '2026-11-01T00:00:00.000Z', endedAt: '2026-11-07T23:59:59.999Z' },
+        retrievedAt: '2026-11-10T00:00:00.000Z',
+        availability: { kind: 'available' as const, value: 0 },
+      },
+      {
+        provenance: requestedQuery.provenance,
+        metric: {
+          providerMetricId: 'PIN_SAVE',
+          meaning: 'Saves recorded by Pinterest.',
+          unit: 'count' as const,
+        },
+        window: { startedAt: '2026-11-01T00:00:00.000Z', endedAt: '2026-11-30T23:59:59.999Z' },
+        retrievedAt: '2026-11-23T00:00:00.000Z',
+        availability: {
+          kind: 'unavailable' as const,
+          reason: 'missing-permission' as const,
+          missingScopes: ['pins:read'],
+        },
+      },
+      {
+        provenance: requestedQuery.provenance,
+        metric: {
+          providerMetricId: 'OUTBOUND_CLICK',
+          meaning: 'Organic impressions recorded by Pinterest.',
+          unit: 'count' as const,
+        },
+        window: { startedAt: '2026-11-01T00:00:00.000Z', endedAt: '2026-11-07T23:59:59.999Z' },
+        retrievedAt: '2026-11-23T00:00:00.000Z',
+        availability: { kind: 'unsupported' as const },
+      },
+    ]),
+};
 
 const command: SocialActionCommand = {
   provider: 'linkedin',
@@ -118,3 +195,109 @@ function registerInvalidCommandTest(): void {
     expect(executeAsync).not.toHaveBeenCalled();
   });
 }
+
+describe('social analytics retrieval', () => {
+  it('keeps mixed windows, provider-native meanings, unavailable fields and freshness explicit', async () => {
+    const observations = await retrieveSocialAnalyticsAsync({
+      adapter,
+      query,
+      observedAt: '2026-11-23T12:00:00.000Z',
+      maximumAgeMs: 24 * 60 * 60 * 1000,
+    });
+
+    expect(observations).toHaveLength(3);
+    expect(observations[0]?.freshness).toBe('stale');
+    expect(observations[1]?.freshness).toBe('fresh');
+    expect(observations[1]?.availability).toEqual({
+      kind: 'unavailable',
+      reason: 'missing-permission',
+      missingScopes: ['pins:read'],
+    });
+    expect(observations[2]?.availability).toEqual({ kind: 'unsupported' });
+    expect('value' in (observations[1]?.availability ?? {})).toBeFalse();
+    const [impressions, saves, outboundClicks] = observations;
+
+    if (!impressions || !saves || !outboundClicks) {
+      throw new Error('Expected each requested Pinterest observation.');
+    }
+
+    expect(areSocialAnalyticsObservationsComparable(impressions, saves)).toBeFalse();
+    expect(areSocialAnalyticsObservationsComparable(impressions, outboundClicks)).toBeFalse();
+  });
+
+  it('retains an explicit provider capability for unsupported fields', async () => {
+    const capabilities = await getSocialAnalyticsCapabilitiesAsync({ adapter, query });
+
+    expect(capabilities[2]).toMatchObject({
+      provenance: query.provenance,
+      metric: { providerMetricId: 'OUTBOUND_CLICK' },
+      availability: { kind: 'unsupported' },
+    });
+  });
+
+  it('accepts provider-native adapter capabilities for each supported provider', async () => {
+    const providers = ['facebook', 'instagram', 'linkedin', 'pinterest'] as const;
+
+    const capabilities = await Promise.all(
+      providers.map((provider) =>
+        getSocialAnalyticsCapabilitiesAsync({
+          adapter: {
+            getCapabilitiesAsync: (requestedQuery) =>
+              Promise.resolve([
+                {
+                  provenance: requestedQuery.provenance,
+                  metric: {
+                    providerMetricId: `${provider}.native-metric`,
+                    meaning: `Provider-native ${provider} metric.`,
+                    unit: 'provider-defined',
+                  },
+                  availability: { kind: 'supported' },
+                },
+              ]),
+          },
+          query: {
+            provenance: { ...query.provenance, provider },
+            providerMetricIds: [`${provider}.native-metric`],
+          },
+        }),
+      ),
+    );
+
+    expect(capabilities.map(([capability]) => capability?.provenance.provider)).toEqual([
+      ...providers,
+    ]);
+  });
+
+  it('rejects observations outside the requested tenant provenance', async () => {
+    const [retrieval] = await adapter.retrieveAsync(query);
+
+    if (!retrieval) {
+      throw new Error('Expected a source observation.');
+    }
+
+    try {
+      await retrieveSocialAnalyticsAsync({
+        adapter: {
+          ...adapter,
+          retrieveAsync: () =>
+            Promise.resolve([
+              {
+                ...retrieval,
+                provenance: { ...query.provenance, tenantId: 'tenant-b' },
+              },
+            ]),
+        },
+        query,
+        observedAt: '2026-11-23T12:00:00.000Z',
+        maximumAgeMs: 24 * 60 * 60 * 1000,
+      });
+      throw new Error('Expected tenant provenance validation to reject the observation.');
+    } catch (error: unknown) {
+      if (!(error instanceof Error)) {
+        throw error;
+      }
+
+      expect(error.message).toContain('outside the declared capability');
+    }
+  });
+});
