@@ -6,7 +6,7 @@
 
 Package: `@ankhorage/social`
 
-No package description is declared.
+todo
 
 ## Task authority and scope
 
