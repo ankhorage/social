@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "kind": "library",
+  "title": "Ankhorage Social",
+  "summary": "Provides provider-neutral execution boundaries for publish, comment, and reaction actions.",
+  "purpose": "Give independently released applications a typed social-action dispatch boundary without coupling workflows to Connection, Flow, OAuth, credential storage, or provider SDKs.",
+  "domain": "social action execution",
+  "responsibilities": [
+    "Publish typed commands, receipts, and provider ports for social actions.",
+    "Validate and dispatch publish, comment, and reaction commands through an explicitly selected provider capability.",
+    "Propagate caller-provided idempotency keys without persisting them."
+  ],
+  "boundaries": [
+    "Does not own Connection, Flow, OAuth, credential storage, provider SDK authentication, or provider-specific payloads.",
+    "Does not execute Flow orchestration or persist action state, idempotency records, or receipts.",
+    "Does not require consumers to use unpublished sibling sources or an Ankhorage application."
+  ],
+  "audience": [
+    "Application authors dispatching social actions through provider adapters.",
+    "Adapter authors implementing provider boundaries for social platforms."
+  ],
+  "useCases": [
+    "Dispatch an authorized publish, comment, or reaction action to a matching provider adapter.",
+    "Reject malformed, unauthorized, mismatched, or unsupported actions before provider execution."
+  ],
+  "architecture": {
+    "role": "Provider-neutral social action library with explicit authorization and provider ports.",
+    "invariants": [
+      "Social action dispatch remains independent from Connection, Flow, OAuth, credential storage, and provider SDKs.",
+      "Provider adapters own platform authorization, durable idempotency, and receipt persistence.",
+      "Consumers use the published package entrypoint and declared dependencies."
+    ]
+  },
+  "constraints": {
+    "limitations": [
+      "Provider capabilities, authorization, idempotency guarantees, and receipts depend on caller-supplied adapters.",
+      "Only publish, comment, and reaction actions are represented by the current public API."
+    ]
+  }
+}
