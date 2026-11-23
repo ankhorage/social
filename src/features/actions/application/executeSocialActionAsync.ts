@@ -1,19 +1,16 @@
 import type {
   SocialAction,
   SocialActionCommand,
-  SocialAuthorizationPort,
   SocialExecutionDecision,
   SocialProviderPort,
 } from '../../../types/social.js';
 
-/*** Authorize and execute a social action through explicit replaceable boundaries. */
+/*** Validate and execute a social action through an explicit provider boundary. */
 export const executeSocialActionAsync = async (
   command: SocialActionCommand,
-  authorization: SocialAuthorizationPort,
   provider: SocialProviderPort,
 ): Promise<SocialExecutionDecision> => {
   if (
-    command.connectionId.trim().length === 0 ||
     command.provider.trim().length === 0 ||
     command.idempotencyKey.trim().length === 0 ||
     !isValidSocialAction(command.action)
@@ -29,13 +26,7 @@ export const executeSocialActionAsync = async (
     return { dispatched: false, reason: 'unsupported-action' };
   }
 
-  const grant = await authorization.authorizeAsync(command);
-
-  if (grant === null || grant.authorizationRef.trim().length === 0) {
-    return { dispatched: false, reason: 'connection-denied' };
-  }
-
-  const receipt = await provider.executeAsync(command, grant.authorizationRef);
+  const receipt = await provider.executeAsync(command);
 
   return { dispatched: true, receipt };
 };

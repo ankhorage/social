@@ -4,9 +4,8 @@ export type SocialAction =
   | { readonly kind: 'comment'; readonly targetId: string; readonly text: string }
   | { readonly kind: 'react'; readonly targetId: string; readonly reaction: string };
 
-/*** One idempotent social operation against an explicitly linked account. */
+/*** One idempotent social operation dispatched to an explicitly selected provider. */
 export interface SocialActionCommand {
-  readonly connectionId: string;
   readonly provider: string;
   readonly idempotencyKey: string;
   readonly action: SocialAction;
@@ -19,21 +18,11 @@ export interface SocialReceipt {
   readonly resourceUrl?: string;
 }
 
-/*** An authorization check owned by the host connection layer, never by the social feature. */
-export interface SocialAuthorizationPort {
-  readonly authorizeAsync: (
-    command: SocialActionCommand,
-  ) => Promise<{ readonly authorizationRef: string } | null>;
-}
-
-/*** Provider adapter contract; adapters resolve opaque references and enforce platform rules. */
+/*** Provider adapter contract; adapters own authorization and enforce platform rules. */
 export interface SocialProviderPort {
   readonly provider: string;
   readonly supportedActions: readonly SocialAction['kind'][];
-  readonly executeAsync: (
-    command: SocialActionCommand,
-    authorizationRef: string,
-  ) => Promise<SocialReceipt>;
+  readonly executeAsync: (command: SocialActionCommand) => Promise<SocialReceipt>;
 }
 
 /*** The dispatch decision does not conceal provider execution errors or imply a durable receipt. */
@@ -41,6 +30,5 @@ export type SocialExecutionDecision =
   | { readonly dispatched: true; readonly receipt: SocialReceipt }
   | {
       readonly dispatched: false;
-      readonly reason:
-        'invalid-command' | 'provider-mismatch' | 'unsupported-action' | 'connection-denied';
+      readonly reason: 'invalid-command' | 'provider-mismatch' | 'unsupported-action';
     };

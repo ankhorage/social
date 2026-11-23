@@ -3,7 +3,6 @@ export { executeSocialActionAsync } from './features/actions/application/execute
 export type {
   SocialAction,
   SocialActionCommand,
-  SocialAuthorizationPort,
   SocialExecutionDecision,
   SocialProviderPort,
   SocialReceipt,
