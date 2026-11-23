@@ -1,7 +1,7 @@
 import type {
   SocialAnalyticsCapability,
   SocialAnalyticsQuery,
-} from '../../../types/socialAnalytics';
+} from '../../../types/socialAnalytics.js';
 
 /*** Gets the provider-native metric capabilities for a tenant-scoped source. */
 export const getSocialAnalyticsCapabilitiesAsync = async (input: {

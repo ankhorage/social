@@ -4,8 +4,8 @@ import type {
   SocialAnalyticsObservation,
   SocialAnalyticsReadInput,
   SocialAnalyticsRetrieval,
-} from '../../../types/socialAnalytics';
-import { getSocialAnalyticsCapabilitiesAsync } from './getSocialAnalyticsCapabilitiesAsync';
+} from '../../../types/socialAnalytics.js';
+import { getSocialAnalyticsCapabilitiesAsync } from './getSocialAnalyticsCapabilitiesAsync.js';
 
 /*** Retrieves tenant-scoped provider-native observations without converting unlike provider metrics. */
 export const retrieveSocialAnalyticsAsync = async (

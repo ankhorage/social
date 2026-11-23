@@ -1,4 +1,4 @@
-import type { SocialAnalyticsObservation } from '../../../types/socialAnalytics';
+import type { SocialAnalyticsObservation } from '../../../types/socialAnalytics.js';
 
 /*** Determines whether two observations have the same tenant-scoped source, provider-native metric definition, and measurement window. */
 export const areSocialAnalyticsObservationsComparable = (
