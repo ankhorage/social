@@ -1,7 +1,7 @@
 {
   "name": "@ankhorage/social",
   "version": "0.0.0",
-  "description": "",
+  "description": "Provider-neutral social publishing, commenting and reaction execution boundaries.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,7 +17,8 @@
   },
   "keywords": [
     "ankhorage",
-    "adapter"
+    "social",
+    "publishing"
   ],
   "files": [
     "dist",
